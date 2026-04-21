@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
 
+const BASE_URL = "https://village-api.onrender.com"; // 🔥 CHANGE ONLY THIS if needed
+
 function App() {
   const [villages, setVillages] = useState([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
-  // Fetch villages with pagination
+  // ✅ Fetch villages (pagination)
   const fetchVillages = async (p = 1) => {
     if (p < 1) return;
 
@@ -15,42 +18,48 @@ function App() {
 
     try {
       const res = await fetch(
-        `http://localhost:5000/villages?page=${p}&limit=20`
+        `${BASE_URL}/villages?page=${p}&limit=20`
       );
       const data = await res.json();
-      setVillages(data.data);
+      setVillages(data.data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Fetch error:", err);
+      setVillages([]);
     }
 
     setLoading(false);
   };
 
-  // Search villages
+  // ✅ Search villages
   const handleSearch = async (e) => {
-    const value = e.target.value;
+    const value = e.target.value.trim();
     setSearch(value);
 
+    // Empty → go back to pagination
     if (value === "") {
+      setIsSearching(false);
       fetchVillages(1);
       return;
     }
 
+    setIsSearching(true);
     setLoading(true);
 
     try {
       const res = await fetch(
-        `http://localhost:5000/villages/search?name=${value}`
+        `${BASE_URL}/villages/search?name=${value}`
       );
       const data = await res.json();
-      setVillages(data);
+      setVillages(data || []);
     } catch (err) {
-      console.error(err);
+      console.error("Search error:", err);
+      setVillages([]);
     }
 
     setLoading(false);
   };
 
+  // ✅ Initial load
   useEffect(() => {
     fetchVillages(1);
   }, []);
@@ -59,6 +68,7 @@ function App() {
     <div style={{ padding: "30px", fontFamily: "Arial" }}>
       <h1 style={{ textAlign: "center" }}>Village Finder 🚀</h1>
 
+      {/* 🔍 Search */}
       <div style={{ textAlign: "center", marginBottom: "20px" }}>
         <input
           placeholder="Search villages..."
@@ -73,8 +83,17 @@ function App() {
         />
       </div>
 
+      {/* Search Info */}
+      {isSearching && (
+        <p style={{ textAlign: "center" }}>
+          Showing results for "{search}"
+        </p>
+      )}
+
       {/* Loading */}
-      {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
+      {loading && (
+        <p style={{ textAlign: "center" }}>Loading...</p>
+      )}
 
       {/* No Data */}
       {!loading && villages.length === 0 && (
@@ -116,11 +135,26 @@ function App() {
       )}
 
       {/* Pagination */}
-      <div style={{ marginTop: "20px", textAlign: "center" }}>
-        <button onClick={() => fetchVillages(page - 1)}>Prev</button>
-        <span style={{ margin: "0 10px" }}>Page {page}</span>
-        <button onClick={() => fetchVillages(page + 1)}>Next</button>
-      </div>
+      {!isSearching && (
+        <div style={{ marginTop: "20px", textAlign: "center" }}>
+          <button
+            onClick={() => fetchVillages(page - 1)}
+            disabled={page === 1}
+            style={{ marginRight: "10px", padding: "8px" }}
+          >
+            Prev
+          </button>
+
+          <span style={{ margin: "0 10px" }}>Page {page}</span>
+
+          <button
+            onClick={() => fetchVillages(page + 1)}
+            style={{ marginLeft: "10px", padding: "8px" }}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }
