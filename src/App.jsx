@@ -7,12 +7,9 @@ function App() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
 
-  // ✅ FETCH VILLAGES
+  // ✅ FETCH DATA (ONLY WHEN NEEDED)
   const fetchVillages = async (p = 1) => {
-    if (p < 1) return;
-
     setLoading(true);
 
     try {
@@ -24,32 +21,29 @@ function App() {
       console.log("API DATA:", data);
 
       if (data && Array.isArray(data.data)) {
-        setVillages([...data.data]); // force update
+        setVillages(data.data);
+        setPage(p);
       } else {
         setVillages([]);
       }
-
-      setPage(p);
     } catch (err) {
-      console.error("Fetch error:", err);
+      console.error(err);
       setVillages([]);
     }
 
     setLoading(false);
   };
 
-  // ✅ SEARCH
+  // ✅ SEARCH (NO RESET BUG)
   const handleSearch = async (e) => {
-    const value = e.target.value.trim();
+    const value = e.target.value;
     setSearch(value);
 
-    if (value === "") {
-      setIsSearching(false);
+    if (value.trim() === "") {
       fetchVillages(1);
       return;
     }
 
-    setIsSearching(true);
     setLoading(true);
 
     try {
@@ -61,24 +55,22 @@ function App() {
       console.log("SEARCH DATA:", data);
 
       if (Array.isArray(data)) {
-        setVillages([...data]);
+        setVillages(data);
       } else {
         setVillages([]);
       }
     } catch (err) {
-      console.error("Search error:", err);
+      console.error(err);
       setVillages([]);
     }
 
     setLoading(false);
   };
 
-  // ✅ INITIAL LOAD
+  // ✅ ONLY RUN ONCE
   useEffect(() => {
     fetchVillages(1);
   }, []);
-
-  console.log("VILLAGES STATE:", villages);
 
   return (
     <div style={{ padding: "30px", fontFamily: "Arial" }}>
@@ -99,23 +91,16 @@ function App() {
         />
       </div>
 
-      {/* Search Info */}
-      {isSearching && (
-        <p style={{ textAlign: "center" }}>
-          Showing results for "{search}"
-        </p>
-      )}
-
       {/* Loading */}
       {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
 
       {/* No Data */}
-      {!loading && (!villages || villages.length === 0) && (
+      {!loading && villages.length === 0 && (
         <p style={{ textAlign: "center" }}>No villages found</p>
       )}
 
       {/* Table */}
-      {!loading && villages && villages.length > 0 && (
+      {!loading && villages.length > 0 && (
         <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#333", color: "#fff" }}>
@@ -143,22 +128,17 @@ function App() {
       )}
 
       {/* Pagination */}
-      {!isSearching && (
-        <div style={{ textAlign: "center", marginTop: "20px" }}>
-          <button
-            onClick={() => fetchVillages(page - 1)}
-            disabled={page === 1}
-          >
-            Prev
-          </button>
+      <div style={{ textAlign: "center", marginTop: "20px" }}>
+        <button onClick={() => fetchVillages(page - 1)} disabled={page === 1}>
+          Prev
+        </button>
 
-          <span style={{ margin: "0 10px" }}>Page {page}</span>
+        <span style={{ margin: "0 10px" }}>Page {page}</span>
 
-          <button onClick={() => fetchVillages(page + 1)}>
-            Next
-          </button>
-        </div>
-      )}
+        <button onClick={() => fetchVillages(page + 1)}>
+          Next
+        </button>
+      </div>
     </div>
   );
 }
