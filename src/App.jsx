@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-const BASE_URL = "https://village-api.onrender.com"; // 🔥 CHANGE ONLY THIS if needed
+const BASE_URL = "https://village-api-q468.onrender.com";
 
 function App() {
   const [villages, setVillages] = useState([]);
@@ -9,19 +9,27 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
-  // ✅ Fetch villages (pagination)
+  // ✅ FETCH VILLAGES
   const fetchVillages = async (p = 1) => {
     if (p < 1) return;
 
     setLoading(true);
-    setPage(p);
 
     try {
       const res = await fetch(
         `${BASE_URL}/villages?page=${p}&limit=20`
       );
       const data = await res.json();
-      setVillages(data.data || []);
+
+      console.log("API DATA:", data);
+
+      if (data && Array.isArray(data.data)) {
+        setVillages([...data.data]); // force update
+      } else {
+        setVillages([]);
+      }
+
+      setPage(p);
     } catch (err) {
       console.error("Fetch error:", err);
       setVillages([]);
@@ -30,12 +38,11 @@ function App() {
     setLoading(false);
   };
 
-  // ✅ Search villages
+  // ✅ SEARCH
   const handleSearch = async (e) => {
     const value = e.target.value.trim();
     setSearch(value);
 
-    // Empty → go back to pagination
     if (value === "") {
       setIsSearching(false);
       fetchVillages(1);
@@ -50,7 +57,14 @@ function App() {
         `${BASE_URL}/villages/search?name=${value}`
       );
       const data = await res.json();
-      setVillages(data || []);
+
+      console.log("SEARCH DATA:", data);
+
+      if (Array.isArray(data)) {
+        setVillages([...data]);
+      } else {
+        setVillages([]);
+      }
     } catch (err) {
       console.error("Search error:", err);
       setVillages([]);
@@ -59,16 +73,18 @@ function App() {
     setLoading(false);
   };
 
-  // ✅ Initial load
+  // ✅ INITIAL LOAD
   useEffect(() => {
     fetchVillages(1);
   }, []);
+
+  console.log("VILLAGES STATE:", villages);
 
   return (
     <div style={{ padding: "30px", fontFamily: "Arial" }}>
       <h1 style={{ textAlign: "center" }}>Village Finder 🚀</h1>
 
-      {/* 🔍 Search */}
+      {/* Search */}
       <div style={{ textAlign: "center", marginBottom: "20px" }}>
         <input
           placeholder="Search villages..."
@@ -91,24 +107,16 @@ function App() {
       )}
 
       {/* Loading */}
-      {loading && (
-        <p style={{ textAlign: "center" }}>Loading...</p>
-      )}
+      {loading && <p style={{ textAlign: "center" }}>Loading...</p>}
 
       {/* No Data */}
-      {!loading && villages.length === 0 && (
+      {!loading && (!villages || villages.length === 0) && (
         <p style={{ textAlign: "center" }}>No villages found</p>
       )}
 
       {/* Table */}
-      {!loading && villages.length > 0 && (
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            marginTop: "20px",
-          }}
-        >
+      {!loading && villages && villages.length > 0 && (
+        <table style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr style={{ background: "#333", color: "#fff" }}>
               <th style={{ padding: "10px" }}>Code</th>
@@ -117,8 +125,8 @@ function App() {
             </tr>
           </thead>
           <tbody>
-            {villages.map((v) => (
-              <tr key={v.village_code}>
+            {villages.map((v, index) => (
+              <tr key={v.village_code || index}>
                 <td style={{ padding: "10px", borderBottom: "1px solid #ccc" }}>
                   {v.village_code}
                 </td>
@@ -136,21 +144,17 @@ function App() {
 
       {/* Pagination */}
       {!isSearching && (
-        <div style={{ marginTop: "20px", textAlign: "center" }}>
+        <div style={{ textAlign: "center", marginTop: "20px" }}>
           <button
             onClick={() => fetchVillages(page - 1)}
             disabled={page === 1}
-            style={{ marginRight: "10px", padding: "8px" }}
           >
             Prev
           </button>
 
           <span style={{ margin: "0 10px" }}>Page {page}</span>
 
-          <button
-            onClick={() => fetchVillages(page + 1)}
-            style={{ marginLeft: "10px", padding: "8px" }}
-          >
+          <button onClick={() => fetchVillages(page + 1)}>
             Next
           </button>
         </div>
